@@ -7,13 +7,13 @@
 
 # Libraries
 
-# In[178]:
+# In[1]:
 
 
 import os, sys, random, glob, argparse, math, gc
 
 
-# In[179]:
+# In[2]:
 
 
 import cv2
@@ -26,14 +26,14 @@ from skimage.feature import hog
 from skimage import data, exposure
 
 
-# In[180]:
+# In[3]:
 
 
 import sklearn
 from sklearn import svm, metrics
 
 
-# In[181]:
+# In[4]:
 
 
 import numpy as np
@@ -41,7 +41,7 @@ import pandas as pd
 from bcolz import carray
 
 
-# In[182]:
+# In[5]:
 
 
 from tqdm import tqdm
@@ -51,14 +51,13 @@ import datetime as dt
 
 # Folders
 
-# In[183]:
+# In[6]:
 
 
 folder_DISFA_data = "/media/amogh/Stuff/CMU/datasets/DISFA_data/"
-folder_DISFA_FAU = "/media/amogh/Stuff/CMU/datasets/DISFA_data/ActionUnit_Labels/"
 folder_DISFA_FAU_summary = "DISFA_FAUs/"
 
-
+print("libraries loaded")
 # ## Helper functions
 
 # ### Getting a dictionary with positives and negatives for each subject and frame
@@ -67,7 +66,7 @@ folder_DISFA_FAU_summary = "DISFA_FAUs/"
 
 # DISFA
 
-# In[184]:
+# In[7]:
 
 
 # returns a dictionary in the form: {'SN001':{'positives': [1,2,3],'negatives':[4,5,6,7] }}
@@ -87,7 +86,7 @@ def getDISFAFramesDictionary(folder_DISFA_FAU_summary, fau_no, fau_thresh):
 
 # ##### To have number of positives and negatives equal in number, let's have a dictionary in which the positives and the negatives corresponding to each category are different.
 
-# In[185]:
+# In[8]:
 
 
 def equaliseDictionary(fau_dict):
@@ -99,7 +98,7 @@ def equaliseDictionary(fau_dict):
 
 # ### Get test and train folds of the data
 
-# In[186]:
+# In[9]:
 
 
 # returns a dictionary with keys as fold_0,fold_1,...,test
@@ -128,7 +127,7 @@ def getTrainTestFolds (fau_dict, no_folds, no_test_subjects):
 
 # ##### Function for cropping given an image path 
 
-# In[187]:
+# In[10]:
 
 
 def similarityTransform(inPoints, outPoints) :
@@ -153,14 +152,14 @@ def similarityTransform(inPoints, outPoints) :
     return tform;
 
 
-# In[188]:
+# In[11]:
 
 
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+print("detector and predictor are loaded")
 
-
-# In[189]:
+# In[12]:
 
 
 #new function, doesnt write landmarks every single time
@@ -218,7 +217,7 @@ def detectAndaligncrop(impath, detector, predictor):
 
 # Getting HOG, given an image path or an image, return features
 
-# In[190]:
+# In[13]:
 
 
 #takes in rgb images and returns the required HOG descriptor array. 
@@ -234,15 +233,15 @@ def getHOGFeatures (orientations, pixels_per_cell, cells_per_block, image):
 #     print("HOG vector dimension: ", fd.shape)
     return fd
 
-imageTouse="files_may20/1.jpeg"
-sample_alignedAndCropped,landmarkPoints=detectAndaligncrop(imageTouse, detector, predictor)
-plt.imshow(sample_alignedAndCropped)a = getHOGFeatures(6, (8,8), (4,4), sample_alignedAndCropped)carray_fd = carray(a, rootdir='/home/amogh/m', mode = 'w')
-carray_fd.flush()
-# Other ways to get features
+# imageTouse="files_may20/1.jpeg"
+# sample_alignedAndCropped,landmarkPoints=detectAndaligncrop(imageTouse, detector, predictor)
+# plt.imshow(sample_alignedAndCropped)a = getHOGFeatures(6, (8,8), (4,4), sample_alignedAndCropped)carray_fd = carray(a, rootdir='/home/amogh/m', mode = 'w')
+# carray_fd.flush()
+# # Other ways to get features
 
 # ##### Preprocessing functions and function_dictionary
 
-# In[191]:
+# In[14]:
 
 
 def FAU4_1(image,landmarks):
@@ -294,7 +293,7 @@ function_dict={'FAU1_1':FAU1_1,'FAU2_1':FAU2_1,'FAU4_1':FAU4_1,'FAU5_1':FAU5_1, 
 
 # Made by keeping in mind that these are the parameters that we need to pass: o, ppc cpb, fau_no, thresh, function used for cropping, folders
 
-# In[192]:
+# In[15]:
 
 
 #saves images and HOG features
@@ -356,8 +355,12 @@ def cropAndSaveImageHOG (o ,ppc ,cpb ,fau_no , thresh, dict_folds, folder_DISFA_
         break
                
 
-cropAndSaveImageHOG(6,(8,8),(4,4),2, 3, getTrainTestFolds(getDISFAFramesDictionary(folder_DISFA_FAU_summary,2,3),5,2), folder_DISFA_data,'FAU2_1',function_dict,getHOGFeatures)
-# In[193]:
+# cropAndSaveImageHOG(6,(8,8),(4,4),2, 3, getTrainTestFolds(getDISFAFramesDictionary(folder_DISFA_FAU_summary,2,3),5,2), folder_DISFA_data,'FAU2_1',function_dict,getHOGFeatures)
+# ##### Final abstract function to crop and save images
+# Inputs are: o, ppc, cpb, fau_no, thresh, cropping_function_name <br>
+# Optional inputs: no_folds=5, no_test_subjects=2, function_dict=function_dict, featuresFunction=getHOGFeatures, folder_DISFA_FAU_summary=folder_DISFA_FAU_summary, folder_DISFA_data=folder_DISFA_data, boolEqualise=True
+
+# In[24]:
 
 
 def finalSaveImagesFeatures(o ,ppc ,cpb ,fau_no , thresh, cropping_function_name, no_folds=5, no_test_subjects=2, function_dict=function_dict, featuresFunction=getHOGFeatures, folder_DISFA_FAU_summary=folder_DISFA_FAU_summary, folder_DISFA_data=folder_DISFA_data, boolEqualise=True):
@@ -367,256 +370,108 @@ def finalSaveImagesFeatures(o ,ppc ,cpb ,fau_no , thresh, cropping_function_name
     cropAndSaveImageHOG(o ,ppc ,cpb ,fau_no ,thresh , dict_folds, folder_DISFA_data,cropping_function_name,function_dict,getHOGFeatures)
 
 finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,2 , 3, 'FAU2_1')
-# Things to do:
-#     - just calculate the features and save them in appropriate folder; save colored image only so that you can use deep learning
-#     - for training; load the features and make X, Y. Then train for different folds, report accuracy for each test fold and show the average in the end.
+# # Things to do:
+# #     - just calculate the features and save them in appropriate folder; save colored image only so that you can use deep learning
+# #     - for training; load the features and make X, Y. Then train for different folds, report accuracy for each test fold and show the average in the end.
 
-# ## Main Function:
+# # ## Main Function:
 
-# In[195]:
+# # In[17]:
 
+# # ### trainSVMGridSearchModel helper function
+# # Using GridSearchCV model
 
-def trainDISFA (fau_no, train_no, fau_thresh, test_subjects_no, boolGetLists=False, boolCalcFeatures=False, boolCrossValidation=True, ):
-    if boolGetLists:
-        getDISFALists
+# # ### Train function to use custom cross validation generator
 
+# # Helper function to train once custom iterable, train and the test function have been defined.
 
-# ### trainSVMGridSearchModel helper function
-# Using GridSearchCV model
-
-# ### Train function to use custom cross validation generator
-
-# Helper function to train once custom iterable, train and the test function have been defined.
-
-# In[ ]:
+# # In[19]:
 
 
-def trainSVMGridSearchModel(X_train, Y_train , no_jobs=1, kernel_list=['rbf','linear'], custom_fold_iterable):
-    #setup parameter search space
-    gamma_range = np.outer(np.logspace(-3,0,4),np.array([1,5]))
-    gamma_range = gamma_range.flatten()
-    C_range = np.outer(np.logspace(-1,1,3),np.array([1,5]))
-    C_range = C_range.flatten()
-    parameters = {'kernel': kernel_list,'C':C_range,'gamma':gamma_range}
-    svm_clsf = svm.SVC()
-    grid_clsf = sklearn.model_selection.GridSearchCV(estimator=svm_clsf,param_grid=parameters,n_jobs=no_jobs,verbose=2,cv=custom_fold_iterable)
-    #train
-    start_time=dt.datetime.now()
-    print('Start param searching at {}'.format(str(start_time)))
-    grid_clsf.fit(X_train,Y_train)
-    elapsed_time=dt.datetime.now()-start_time
-    print('Elapsed time, param searching {}'.format(str(elapsed_time)))
-    sorted(grid_clsf.cv_results_.keys())
-    return grid_clsf
+# def trainSVMGridSearchModel(X_train, Y_train , custom_fold_iterable, no_jobs=1, kernel_list=['rbf','linear']):
+#     #setup parameter search space
+#     gamma_range = np.outer(np.logspace(-3,0,4),np.array([1,5]))
+#     gamma_range = gamma_range.flatten()
+#     C_range = np.outer(np.logspace(-1,1,3),np.array([1,5]))
+#     C_range = C_range.flatten()
+#     parameters = {'kernel': kernel_list,'C':C_range,'gamma':gamma_range}
+#     svm_clsf = svm.SVC()
+#     grid_clsf = sklearn.model_selection.GridSearchCV(estimator=svm_clsf,param_grid=parameters,n_jobs=no_jobs,verbose=2,cv=custom_fold_iterable)
+#     #train
+#     start_time=dt.datetime.now()
+#     print('Start param searching at {}'.format(str(start_time)))
+#     grid_clsf.fit(X_train,Y_train)
+#     elapsed_time=dt.datetime.now()-start_time
+#     print('Elapsed time, param searching {}'.format(str(elapsed_time)))
+#     sorted(grid_clsf.cv_results_.keys())
+#     return grid_clsf
 
 
-# In[ ]:
+# # In[22]:
 
 
-def trainCustomGridSearch(fau_no, thresh, cropping_function_name,trainFunction, folder_data=folder_DISFA_data):
+# def trainCustomGridSearch(fau_no, thresh, cropping_function_name ,trainFunction , folder_data=folder_DISFA_data):
     
-    fold_folder_list = glob.glob(folder_data + "features/hog/{}/{}/*".format(thresh,cropping_function_name))
+#     fold_folder_list = glob.glob(folder_data + "features/hog/{}/{}/*".format(thresh,cropping_function_name))
     
-    # defining global holders and variables
-    no_folds = len(fold_folder_list)
-    features = []
-    targets = []
-    fold_label_list = []
+#     # defining global holders and variables
+#     no_folds = len(fold_folder_list)
+#     features = []
+#     targets = []
+#     fold_label_list = []
 
-    #processing for each fold:
-    for fold_no, fol in enumerate(fold_folder_list):
+#     #processing for each fold:
+#     for fold_no, fol in enumerate(fold_folder_list):
         
-        #lists specific to fold
-        list_positive_feature_folders = []
-        list_negative_feature_folders = []
-        positive_features = []
-        negative_features = []
-        fold_targets = []
-        fold_train_features = []
+#         #lists specific to fold
+#         list_positive_feature_folders = []
+#         list_negative_feature_folders = []
+#         positive_features = []
+#         negative_features = []
+#         fold_targets = []
+#         fold_train_features = []
         
-        #loading features in lists
-        list_positive_feature_folders.extend(glob.glob(fol + "/*/positives/*/"))
-        list_negative_feature_folders.extend(glob.glob(fol + "/*/negatives/*/"))
-        print("loading positive features for fold: ", fold_no)
-        for pos_feat_folder in list_positive_feature_folders:
-            pos_feat = carray(rootdir = pos_feat_folder, mode = 'r')
-            positive_features.append(pos_feat)
-        print("loading negative features for fold: ", fold_no)
-        for neg_feat_folder in list_negative_feature_folders:
-            neg_feat = carray(rootdir = neg_feat_folder, mode = 'r')
-            negative_features.append(neg_feat)
+#         #loading features in lists
+#         list_positive_feature_folders.extend(glob.glob(fol + "/*/positives/*/"))
+#         list_negative_feature_folders.extend(glob.glob(fol + "/*/negatives/*/"))
+#         print("loading positive features for fold: ", fold_no)
+#         for pos_feat_folder in list_positive_feature_folders:
+#             pos_feat = carray(rootdir = pos_feat_folder, mode = 'r')
+#             positive_features.append(pos_feat)
+#         print("loading negative features for fold: ", fold_no)
+#         for neg_feat_folder in list_negative_feature_folders:
+#             neg_feat = carray(rootdir = neg_feat_folder, mode = 'r')
+#             negative_features.append(neg_feat)
 
-        fold_train_features.extend(positive_features)
-        fold_train_features.extend(negative_features)
-        fold_targets.extend([1] * len(positive_features))
-        fold_targets.extend([0] * len(negative_features))
-        no_fold_features = len(positive_features) + len(negative_features)
-        print("this fold has these many features: ",no_fold_features)
+#         fold_train_features.extend(positive_features)
+#         fold_train_features.extend(negative_features)
+#         fold_targets.extend([1] * len(positive_features))
+#         fold_targets.extend([0] * len(negative_features))
+#         no_fold_features = len(positive_features) + len(negative_features)
+#         print("this fold has these many features: ",no_fold_features)
         
-        #updating global features and targets
-        features.extend(fold_train_features)
-        targets.extend(fold_targets)
-        #updating fold_label_list
-        fold_label_list.extend([fold_no]*no_fold_features)
+#         #updating global features and targets
+#         features.extend(fold_train_features)
+#         targets.extend(fold_targets)
+#         #updating fold_label_list
+#         fold_label_list.extend([fold_no]*no_fold_features)
 
-    #defining the custom cross validation generator over training data
-    cvIterable= []
-    for fold_no in range(no_folds):
-        fold_label_list = np.array(fold_label_list)
-        train_indices = np.argwhere(fold_label_list != fold_no).flatten()
-        test_indices = np.argwhere(fold_label_list == fold_no).flatten()
-        cvIterable.append((train_indices,test_indices))
+#     #defining the custom cross validation generator over training data
+#     cvIterable= []
+#     for fold_no in range(no_folds):
+#         fold_label_list = np.array(fold_label_list)
+#         train_indices = np.argwhere(fold_label_list != fold_no).flatten()
+#         test_indices = np.argwhere(fold_label_list == fold_no).flatten()
+#         cvIterable.append((train_indices,test_indices))
     
-    classifier_results = trainSVMGridSearchModel(features ,targets ,no_jobs=8 , kernel_list=['linear'], cvIterable)
+#     classifier_results = trainSVMGridSearchModel(features ,targets, cvIterable ,no_jobs=8 , kernel_list=['linear'])
     
-    return classifier_results 
+#     return classifier_results 
 
 
-# #### Rough functions and ideas(not useful now)
-gamma_range = np.outer(np.logspace(-3,0,4),np.array([1,5]))
-gamma_range = gamma_range.flatten()
-C_range = np.outer(np.logspace(-1,1,3),np.array([1,5]))
-C_range = C_range.flatten()
-parameters = {'kernel': ['linear'],'C':C_range,'gamma':gamma_range}for g in sklearn.model_selection.ParameterGrid(parameters):
-    print (g)def trainSVMGridSearchModel(X_train, Y_train, X_test, Y_test, no_jobs=4, kernel_list=['linear']):
-    #setup parameter search space
-    gamma_range = np.outer(np.logspace(-3,0,4),np.array([1,5]))
-    gamma_range = gamma_range.flatten()
-    C_range = np.outer(np.logspace(-1,1,3),np.array([1,5]))
-    C_range = C_range.flatten()
-    parameters = {'kernel': kernel_list,'C':C_range,'gamma':gamma_range}
-    for g in sklearn.model_selection.ParameterGrid(parameters):
-            svm_clsf = svm.SVC(        )
-    svm_clsf = svm.SVC()
-    grid_clsf = sklearn.model_selection.GridSearchCV(estimator=svm_clsf,param_grid=parameters,n_jobs=no_jobs,verbose=2, cv=[(slice(None), slice(None))])
-    #train
-    start_time=dt.datetime.now()
-    print('Start param searching at {}'.format(str(start_time)))
-    grid_clsf.fit(X_train,Y_train)
-    elapsed_time=dt.datetime.now()-start_time
-    print('Elapsed time, param searching {}'.format(str(elapsed_time)))
-    sorted(grid_clsf.cv_results_.keys())
-    return grid_clsf
-# ### Main Train Function for manual fold approach(not useful now)
-# TO BE ABLE TO TAKE IN OTHER DATASETS ALSO, SET THE FOLDER DATA ACCORDINGLY IN THE CORRESPONDING FUNCTION TO THE DATASET
-#ideally loading folds also should've been a function.
-#trainFunction as an argument allows changing choice of function for choosing the model
-def train(fau_no, thresh, cropping_function_name,trainFunction, folder_data):
-    fold_folder_list = glob.glob(folder_data + "features/hog/{}/{}/*".format(thresh, cropping_function_name))
-    no_folds = len(fold_folder_list)
-    for fold_no in range(no_folds):
-        print("In fold number", fold_no)
-        #do fold_no times training by testing on the folder corresponding to fold_no
-        train_folds_folder_list = fold_folder_list[:fold_no] + fold_folder_list[fold_no+1:]
-        list_positive_feature_folders = []
-        list_negative_feature_folders = []
-        positive_features = []
-        negative_features = []
-        # populate the list_positive_feature_folders and list_negative_feature_folders
-        for fol in train_folds_folder_list:
-            list_positive_feature_folders.extend(glob.glob(fol + "/*/positives/*/"))
-            list_negative_feature_folders.extend(glob.glob(fol + "/*/negatives/*/"))
-        # populate the positive_features and negative_features array
-        print("loading positive features")
-        for pos_feat_folder in list_positive_feature_folders:
-            pos_feat = carray(rootdir = pos_feat_folder, mode = 'r')
-            positive_features.append(pos_feat)
-        print("loading negative features")
-        for neg_feat_folder in list_negative_feature_folders:
-            neg_feat = carray(rootdir = neg_feat_folder, mode = 'r')
-            negative_features.append(neg_feat)
-        positive_features = np.array(positive_features)
-        negative_features = np.array(negative_features)
-        print("shape of positive features array is: ", (positive_features).shape)
-        print("shape of negative features array is: ", (negative_features).shape)
-        train_array_X = np.concatenate((positive_features,negative_features))
-        target_positives = np.ones(positive_features.shape[0])
-        target_negatives = np.zeros(negative_features.shape[0])
-        targets_Y = np.append(target_positives, target_negatives)
-        # training data and labels loaded.
+# # ### Example functions to save and crop images; execute to process train
 
-        #loading test data
-        test_folder = fold_folder_list[fold_no]
-        list_positive_test_folder = glob.glob(test_folder + "/*/positives/*/")
-        list_negative_test_folder = glob.glob(test_folder + "/*/negatives/*/")
-        positive_test_features = []
-        negative_test_features = []
-        for pos_feat_folder in list_positive_test_folder:
-        pos_feat = carray(rootdir = pos_feat_folder, mode = 'r')
-        positive_test_features.append(pos_feat)
-        for neg_feat_folder in list_negative_test_folder:
-            neg_feat = carray(rootdir = neg_feat_folder, mode = 'r')
-            negative_test_features.append(neg_feat)
-        positive_test_features = np.array(positive_test_features)
-        negative_test_features = np.array(negative_test_features)
-        test_array_X = np.concatenate((positive_test_features,negative_test_features))
-        test_array_Y = np.append(np.ones(positive_test_features.shape[0]), np.zeros(negative_test_features.shape[0]))
-        print("shape of test array X: ", np.array(test_array_X).shape)
-        print("shape of test array Y: ", np.array(test_array_Y).shape)
-    
-        # training for this fold
-        results = {}
-        trainFunction(train_array_X, train_targets_Y, test_array_X, test_array_Y)
-        classificationResult = trainModel(train_array_X, targets_Y, no_jobs, kernel_list = ['linear'])
-        best_classifier = grid_clsf.best_estimator_
-        best_params=grid_clsf.best_params_
-        scores=grid_clsf.cv_results_['mean_test_score'].reshape(2,len(C_range),len(gamma_range))
-        print("scores are: ", scores)
-        print("best classifier is:", "\n", classifier)
-        print("best parameters are: ", "\n", best_params)
-        
-        
-        
-        
-    
-        fold_folder_list = glob.glob(folder_DISFA_data + "features/hog/{}/{}/*".format(3,'FAU2_1'))
-no_folds = len(fold_folder_list)
-for fold_no in range(no_folds):
-    print("In fold number", fold_no)
-    #do fold_no times training by testing on the folder corresponding to fold_no
-    train_folds_folder_list = fold_folder_list[:fold_no] + fold_folder_list[fold_no+1:]
-    list_positive_feature_folders = []
-    list_negative_feature_folders = []
-    positive_features = []
-    negative_features = []
-    # populate the list_positive_feature_folders and list_negative_feature_folders
-    for fol in train_folds_folder_list:
-        list_positive_feature_folders.extend(glob.glob(fol + "/*/positives/*/"))
-        list_negative_feature_folders.extend(glob.glob(fol + "/*/negatives/*/"))
-    # populate the positive_features and negative_features array
-    print("loading positive features")
-    for pos_feat_folder in list_positive_feature_folders:
-        pos_feat = carray(rootdir = pos_feat_folder, mode = 'r')
-        positive_features.append(pos_feat)
-    print("loading negative features")
-    for neg_feat_folder in list_negative_feature_folders:
-        neg_feat = carray(rootdir = neg_feat_folder, mode = 'r')
-        negative_features.append(neg_feat)
-    positive_features = np.array(positive_features)
-    negative_features = np.array(negative_features)
-    print("shape of np positive arrays is: ", (positive_features).shape)
-    print("shape of np negative arrays is: ", (negative_features).shape)
-    train_array_X = np.concatenate((positive_features,negative_features))
-    train_targets_Y = np.append(np.ones(positive_features.shape[0]), np.zeros(negative_features.shape[0]))
-    #loading test data
-    test_folder = fold_folder_list[fold_no]
-    list_positive_test_folder = glob.glob(test_folder + "/*/positives/*/")
-    list_negative_test_folder = glob.glob(test_folder + "/*/negatives/*/")
-    positive_test_features = []
-    negative_test_features = []
-    for pos_feat_folder in list_positive_test_folder:
-        pos_feat = carray(rootdir = pos_feat_folder, mode = 'r')
-        positive_test_features.append(pos_feat)
-    for neg_feat_folder in list_negative_test_folder:
-        neg_feat = carray(rootdir = neg_feat_folder, mode = 'r')
-        negative_test_features.append(neg_feat)
-    positive_test_features = np.array(positive_test_features)
-    negative_test_features = np.array(negative_test_features)
-    test_array_X = np.concatenate((positive_test_features,negative_test_features))
-    test_array_Y = np.append(np.ones(positive_test_features.shape[0]), np.zeros(negative_test_features.shape[0]))
-    print("shape of test array X: ", np.array(test_array_X).shape)
-    print("shape of test array Y: ", np.array(test_array_Y).shape)
-#     positives = []
-#     for fold_folder in train_folder_list:
-#         array_posi=carray(rootdir=dir_features_hog_1_fau4_1+'positives/',mode='r')
-#         print(fold_foder)
+# # In[25]:
+
+
+# finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,2 , 2, 'FAU2_1')
