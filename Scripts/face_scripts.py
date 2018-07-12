@@ -1,4 +1,4 @@
-
+print("loading libraries")
 import os, sys, random, glob, argparse, math, gc
 
 import cv2
@@ -20,10 +20,10 @@ from bcolz import carray
 from tqdm import tqdm
 from time import sleep
 import datetime as dt
+print("libraries loaded")
 
-
-folder_DISFA_data = "/media/amogh/Stuff/CMU/datasets/DISFA_data/"
-folder_DISFA_FAU = "/media/amogh/Stuff/CMU/datasets/DISFA_data/ActionUnit_Labels/"
+folder_DISFA_data = "/pylon5/ir5fpcp/amogh112/DISFA_data/"
+folder_DISFA_FAU = "/pylon5/ir5fpcp/amogh112/DISFA_data/ActionUnit_Labels/"
 folder_DISFA_FAU_summary = "DISFA_FAUs/"
 
 # returns a dictionary in the form: {'SN001':{'positives': [1,2,3],'negatives':[4,5,6,7] }}
@@ -43,9 +43,12 @@ def getDISFAFramesDictionary(folder_DISFA_FAU_summary, fau_no, fau_thresh):
 def equaliseDictionary(fau_dict):
     for subj in fau_dict.keys():
         number_positives = len(fau_dict[subj]['positives'])
-        fau_dict[subj]['negatives'] = random.sample(fau_dict[subj]['negatives'], number_positives)
+        number_negatives = len(fau_dict[subj]['negatives'])
+        if number_negatives >= number_positives:
+            fau_dict[subj]['negatives'] = random.sample(fau_dict[subj]['negatives'], number_positives)
+        else:
+            fau_dict[subj]['positives'] = random.sample(fau_dict[subj]['positives'], number_negatives)
     return fau_dict
-
 
 # returns a dictionary with keys as fold_0,fold_1,...,test
 # make sure number of folds exactly divide the train subjects
@@ -373,6 +376,16 @@ def trainCustomGridSearch(fau_no, thresh, cropping_function_name ,trainFunction 
 
 # In[25]:
 if __name__ == '__main__':
-
-	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,2 , 2, 'FAU2_1')
-
+#        print("saving FAU2 thresh 2")
+#	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,2 , 2, 'FAU2_1')
+#        print("saving FAU2 thresh 3")
+#	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,2 , 3, 'FAU2_1')
+#        print("saving FAU4 thresh 2")
+#	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,4 , 2, 'FAU4_1')
+#        print("saving FAU4 thresh 3")
+#	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,4 , 3, 'FAU4_1')
+ #       print("saving FAU1 thresh 2")
+	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,1 , 2, 'FAU1_1')
+        print("saving FAU1 thresh 3")
+	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,1 , 3, 'FAU1_1')
+        print("done")
