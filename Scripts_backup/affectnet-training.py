@@ -58,9 +58,6 @@ from keras_vggface.vggface import VGGFace
 # In[15]:
 
 
-get_ipython().system('ls $SCRATCH/AffectNet/data_copy')
-
-
 # In[16]:
 
 
@@ -90,7 +87,7 @@ folder_annotated_training_images = folder_affectnet + "Manually_Annotated_Images
 
 
 df_train = pd.read_csv(path_training_csv,header=None)
-df_train.head()
+# df_train.head()
 
 
 # In[23]:
@@ -105,7 +102,7 @@ list_image_paths = df_train.iloc[:,0].values
 df_va_train = df_train.iloc[:,[0,len(df_train.columns)-2,len(df_train.columns)-1]]
 df_va_train.columns = ["image","valence", "arousal"]
 print("shape is: ", df_va_train.shape)
-(df_va_train.head())
+# (df_va_train.head())
 
 
 # Converting the dataframe in a dictionary
@@ -114,7 +111,7 @@ print("shape is: ", df_va_train.shape)
 
 
 dict_im_va = df_va_train.set_index('image').T.to_dict('list')
-dict_im_va
+# dict_im_va
 
 
 # #### Moving the files with bad labels from the training set
@@ -122,26 +119,6 @@ dict_im_va
 # In[26]:
 
 
-image_name_bad_labels = ([t for t in dict_im_va.keys() if dict_im_va.get(t) == [-2.,-2.]])
-len(image_name_bad_labels)
-
-
-# Code to remove images with bad labels: 
-folder_bad_labelled_train = folder_affectnet + "bad_label/"
-if not os.path.exists(folder_bad_labelled_train):
-    os.makedirs(folder_bad_labelled_train)
-for im in image_name_bad_labels:
-    src_path = folder_train_data+im
-    dest_path = folder_bad_labelled_train+im
-    dest_dir = os.path.dirname(dest_path)
-    if not os.path.exists(dest_dir):
-        os.makedirs(dest_dir)
-    if os.path.exists(src_path):
-        shutil.move(src_path, dest_path)
-# In[27]:
-
-
-len(dict_im_va)
 
 
 # #### Defining function to get labels
@@ -178,11 +155,8 @@ def get_data(path, target_size=(224,224), class_mode=None, shuffle=False, batch_
 # In[31]:
 
 
-batches_flow_from_dir = get_data(folder_train_data)
-
-
 # ## Defining custom flow_from_directory generator for labels
-
+batches_flow_from_dir = get_data(folder_train_data)
 # In[32]:
 
 
@@ -199,21 +173,8 @@ def flow_from_directory_va(flow_from_directory_gen):
 
 
 list_train_image_fnames = (glob.glob(folder_train_data+'/*/*'))
-list_train_image_fnames
+# list_train_image_fnames
 
-#Tracking the unlabelled images
-a=list_train_image_fnames[0]
-a
-
-os.path.basename(os.path.split(a)[0])+'/'+(os.path.split(a)[1])
-
-l = ([(os.path.basename(os.path.split(f)[0])+'/'+(os.path.split(f)[1])) for f in list_train_image_fnames])
-
-a =list(map(get_va_from_image,l))
-
-len(a)
-
-a.count(None)
 # # Models - Defining, loading data, training, saving
 
 # ### Model 1: VGG16 -> model_vgg_reg1
@@ -227,9 +188,6 @@ vgg_full = applications.VGG16(weights='imagenet', include_top=False, input_shape
 
 
 # In[35]:
-
-
-vgg_full.summary()
 
 
 # Building the model on top of the conv part
@@ -282,16 +240,6 @@ model_vgg_reg1.compile(loss='mean_squared_error',optimizer=optimizers.SGD(lr=0.0
 
 # In[45]:
 
-
-model_vgg_reg1.summary()
-
-
-# #### Loading batches, making destination folders
-batches_flow_from_dir = get_data(folder_train_data)list_filenames_affectnet = batches_flow_from_dir.filenames
-print("total number of files are: ", len(list_filenames_affectnet))
-# In[46]:
-
-
 gen_va = flow_from_directory_va(batches_flow_from_dir)
 
 
@@ -301,64 +249,3 @@ gen_va = flow_from_directory_va(batches_flow_from_dir)
 
 
 model_vgg_reg1.fit_generator(gen_va, epochs=3, steps_per_epoch=10000)
-
-
-# In[137]:
-
-
-new_model.summary(ImageDataGenerator())
-
-
-# #### Unnecessary for now: saving conv features for VGG16
-
-# Saving conv features
-folder_affectnet_conv_features_vgg16 = folder_affectnet + "features/vgg16/conv_features"
-if not os.path.exists(folder_affectnet_conv_features_vgg16):
-    os.makedirs(folder_affectnet_conv_features_vgg16)
-# In[40]:
-
-
-layers = model_vgg16.layers
-layer_idx = [index for index,layer in enumerate(layers) if type(layer) is Convolution2D][-1]
-conv_layers, fc_layers = layers[:layer_idx+1], layers[layer_idx+1:]
-
-
-# In[41]:
-
-
-model_vgg16_conv = Sequential(conv_layers)
-
-
-# In[42]:
-
-
-model_vgg16_conv.layers
-
-
-# ## Model 2: 
-
-# In[72]:
-
-
-vgg_face_full = VGGFace(include_top=False, input_shape=(224, 224, 3), pooling='avg')
-
-
-# In[73]:
-
-
-vgg_face_full.summary()
-
-
-# ### Model 2 - MobileNet
-
-# In[15]:
-
-
-mobnet = applications.MobileNet()
-
-
-# In[19]:
-
-
-mobnet.summary()
-

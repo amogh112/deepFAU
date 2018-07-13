@@ -1,4 +1,4 @@
-
+print("loading libraries")
 import os, sys, random, glob, argparse, math, gc
 
 import cv2
@@ -12,6 +12,7 @@ from skimage import exposure
 
 import sklearn
 from sklearn import svm, metrics
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -20,10 +21,10 @@ from bcolz import carray
 from tqdm import tqdm
 from time import sleep
 import datetime as dt
+print("libraries loaded")
 
-
-folder_DISFA_data = "/media/amogh/Stuff/CMU/datasets/DISFA_data/"
-folder_DISFA_FAU = "/media/amogh/Stuff/CMU/datasets/DISFA_data/ActionUnit_Labels/"
+folder_DISFA_data = "/pylon5/ir5fpcp/amogh112/DISFA_data/"
+folder_DISFA_FAU = "/pylon5/ir5fpcp/amogh112/DISFA_data/ActionUnit_Labels/"
 folder_DISFA_FAU_summary = "DISFA_FAUs/"
 
 # returns a dictionary in the form: {'SN001':{'positives': [1,2,3],'negatives':[4,5,6,7] }}
@@ -43,9 +44,12 @@ def getDISFAFramesDictionary(folder_DISFA_FAU_summary, fau_no, fau_thresh):
 def equaliseDictionary(fau_dict):
     for subj in fau_dict.keys():
         number_positives = len(fau_dict[subj]['positives'])
-        fau_dict[subj]['negatives'] = random.sample(fau_dict[subj]['negatives'], number_positives)
+        number_negatives = len(fau_dict[subj]['negatives'])
+        if number_negatives >= number_positives:
+            fau_dict[subj]['negatives'] = random.sample(fau_dict[subj]['negatives'], number_positives)
+        else:
+            fau_dict[subj]['positives'] = random.sample(fau_dict[subj]['positives'], number_negatives)
     return fau_dict
-
 
 # returns a dictionary with keys as fold_0,fold_1,...,test
 # make sure number of folds exactly divide the train subjects
@@ -311,7 +315,7 @@ def trainSVMGridSearchModel(X_train, Y_train , custom_fold_iterable, no_jobs=1, 
     return grid_clsf
 
 
-def trainCustomGridSearch(fau_no, thresh, cropping_function_name ,trainFunction , folder_data=folder_DISFA_data):
+def trainCustomGridSearch(fau_no, thresh, cropping_function_name ,trainFunction , no_jobs=8, folder_data=folder_DISFA_data):
     
     fold_folder_list = glob.glob(folder_data + "features/hog/{}/{}/*".format(thresh,cropping_function_name))
     
@@ -320,6 +324,7 @@ def trainCustomGridSearch(fau_no, thresh, cropping_function_name ,trainFunction 
     features = []
     targets = []
     fold_label_list = []
+
     #processing for each fold:
     for fold_no, fol in enumerate(fold_folder_list):
         
@@ -364,15 +369,52 @@ def trainCustomGridSearch(fau_no, thresh, cropping_function_name ,trainFunction 
         test_indices = np.argwhere(fold_label_list == fold_no).flatten()
         cvIterable.append((train_indices,test_indices))
     
-    classifier_results = trainSVMGridSearchModel(features ,targets, cvIterable ,no_jobs=8 , kernel_list=['linear'])
+    classifier_results = trainSVMGridSearchModel(features ,targets, cvIterable ,no_jobs=no_jobs , kernel_list=['linear'])
     
     return classifier_results 
 
 
-# ### Example functions to save and crop images; execute to process train
+def saveClassifierResults(fau_no, thresh, cropping_function_name ,trainFunction , no_jobs=8, folder_data=folder_DISFA_data):
+    
+    print("training result saved") 
+    grid_search_result = trainCustomGridSearch(fau_no, thresh, cropping_function_name ,trainFunction , no_jobs=no_jobs, folder_data=folder_data)
+    print("training done")
+    
+    best_classifier = grid_search_result.best_estimator_
+    params = grid_search_result.best_params_
+    
+    folder_model_dest = "{}/models/{}_{}/".format(folder_data,thresh, cropping_function_name)
+    if not os.path.exists(folder_model_dest):
+        os.makedirs(folder_model_dest)
+    file_result_dump  = folder_model_dest + "result.sav"
+    file_model_dump  = folder_model_dest + "best_model.sav"
+    
+    pickle.dump(grid_search_result,open(file_result_dump,'wb'))
+    pickle.dump(best_classifier,open(file_model_dump,'wb'))
+    print("best params are: ", params)
 
-# In[25]:
+
+
+ ### Example functions to save and crop images; execute to process train
+
+# In[2
 if __name__ == '__main__':
-
-	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,2 , 2, 'FAU2_1')
-
+#        print("saving FAU2 thresh 2")
+#	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,2 , 2, 'FAU2_1')
+#        print("saving FAU2 thresh 3")
+#	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,2 , 3, 'FAU2_1')
+#        print("saving FAU4 thresh 2")
+#	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,4 , 2, 'FAU4_1')
+#        print("saving FAU4 thresh 3")
+#	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,4 , 3, 'FAU4_1')
+ #       print("saving FAU1 thresh 2")
+#	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,1 , 2, 'FAU1_1')
+#        print("saving FAU1 thresh 3")
+#	finalSaveImagesFeatures (6 ,(8,8) ,(4,4) ,1 , 3, 'FAU1_1')
+#        saveClassifierResults(2,2,'FAU2_1',1,28)
+        saveClassifierResults(2,3,'FAU2_1',1,28)
+        saveClassifierResults(4,2,'FAU4_1',1,28)
+#        saveClassifierResults(4,3,'FAU4_1',1,28)
+#        saveClassifierResults(1,2,'FAU1_1',1,28)
+#        saveClassifierResults(1,3,'FAU1_1',1,28)
+        print("done")
